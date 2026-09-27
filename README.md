@@ -10,12 +10,36 @@ Production application:
 
 https://client-dashboard-seven-bay.vercel.app
 
+## Demo Accounts
+
+Two preconfigured accounts are available for immediate evaluation. They contain demonstration data only.
+
+### Administrator
+
+```text
+Email: admin@cliently-demo.com
+Password: ClientlyDemo#2026
+Username: @demo.admin
+Role: Admin
+```
+
+### Client
+
+```text
+Email: client@cliently-demo.com
+Password: ClientlyDemo#2026
+Username: @demo.client
+Role: Client
+```
+
+> These credentials are exclusively for this demonstration application and are not reused for personal accounts or services.
+
 ## Overview
 
 Client Dashboard provides two application roles:
 
 - **Client** — manages personal account information and views recent account activity.
-- **Admin** — manages users, searches and filters accounts, reviews user details, and updates user roles.
+- **Admin** — manages users, searches and filters accounts, reviews user details, updates user roles, and reviews administrative audit history.
 
 Authentication and database services are provided by Supabase, while the frontend and server-side application logic are implemented with Next.js.
 
@@ -24,7 +48,7 @@ Authentication and database services are provided by Supabase, while the fronten
 ### Authentication
 
 - Email and password registration
-- Unique username assigned at registration (email prefix suggested, editable before signup)
+- Unique username assigned at registration (email prefix suggested and editable before signup)
 - Secure sign in and sign out
 - Password reset workflow
 - In-account password change
@@ -40,18 +64,17 @@ Authentication and database services are provided by Supabase, while the fronten
 - Editable user profile
 - Unique editable username
 - Company and phone information
-- Account status
-- Role information
+- Account status and role information
 - Recent activity history
-- Sign-in, sign-out, profile, password, registration and email-confirmation events
+- Sign-in, sign-out, profile, password, registration, and email-confirmation events
 - Responsive dashboard interface
 - Loading, empty, success, and error states
 
 ### Admin Dashboard
 
 - Administrative dashboard
-- User listing with names, usernames and email identities
-- Search users
+- User listing with names, usernames, and email identities
+- Search users, including by username
 - Filter users by role
 - User detail pages
 - Update user roles with actor-aware audit history
@@ -72,7 +95,7 @@ Authentication and database services are provided by Supabase, while the fronten
 
 - PostgreSQL database through Supabase
 - `profiles` table with unique usernames
-- `activity_logs` table
+- `activity_logs` table with actor-aware auditing
 - Authentication/profile relationship
 - Automatic profile creation for new users
 - Database triggers
@@ -80,17 +103,15 @@ Authentication and database services are provided by Supabase, while the fronten
 - Client-specific access policies
 - Administrator access policies
 
-## Demo Accounts
+## Testing the Complete Email Authentication Flow
 
-For the final evaluation, two preconfigured demonstration accounts can be provided: one **Administrator** and one **Client**. These accounts are intended for immediate role-based testing and should contain demonstration data only.
+The preconfigured demo accounts are intended for quickly reviewing the Admin and Client experiences.
 
-The demo credentials can be shared with the evaluator separately or added here immediately before delivery. Avoid reusing any personal password.
+To test features that depend on receiving email, such as email confirmation and password recovery, register a new account using an email address you can access.
 
-### Testing the Complete Email Authentication Flow
+New registrations are assigned the `client` role. The registration form suggests a username using the part of the email before `@`, but it can be replaced with any available valid username. Full names do not need to be unique; usernames do.
 
-The preconfigured demo accounts are best for quickly reviewing the Admin and Client experiences. To test email-dependent authentication features, the evaluator should register a new account using an email address they can access.
-
-New registrations are automatically assigned the `client` role. The registration form suggests a username from the part of the email before `@`, but the evaluator can replace it with any available valid username. Usernames are unique even when two users have the same full name. Using a real accessible email allows the evaluator to test the complete lifecycle:
+Using an accessible email allows the complete lifecycle to be tested:
 
 - Account registration
 - Email confirmation
@@ -101,7 +122,7 @@ New registrations are automatically assigned the `client` role. The registration
 - Protected routes
 - Activity history
 
-An administrator can later promote that newly registered account to `admin` from User Management, allowing the role-management workflow to be evaluated as well.
+An administrator can later promote the newly registered account to `admin` from User Management, allowing the role-management and audit workflow to be evaluated.
 
 ## Activity Audit Trail
 
@@ -112,11 +133,14 @@ The application records meaningful authenticated account events in `activity_log
 - Successful sign in
 - Sign out
 - Profile updates
+- Username changes
 - Password changes from Security settings
 - Completed password recovery
-- Administrator role changes, including the previous role, new role and administrator identity
+- Administrator role changes, including the previous role, new role, affected account, and administrator identity
 
-Password values, recovery tokens, session tokens and other secrets are never written to the activity log. A forgot-password **request** is intentionally not attached to a user audit record because the request is unauthenticated; avoiding an account lookup at that stage helps prevent account-enumeration behavior. The completed recovery is recorded once the recovery session is authenticated.
+For administrative actions, `user_id` identifies the account affected by the event while `actor_id` identifies the authenticated account that performed the action when applicable. This allows role changes to be represented in both the administrator and affected user's histories.
+
+Password values, recovery tokens, session tokens, and other secrets are never written to the activity log. A forgot-password **request** is intentionally not attached to a user audit record because the request is unauthenticated; the completed recovery is recorded once the recovery session is authenticated.
 
 ## Technology Stack
 
@@ -148,9 +172,9 @@ Next.js Application
    +-- API Routes
           |
           v
-      Supabase
-       /    \
-      /      \
+       Supabase
+        /    \
+       /      \
 Supabase Auth   PostgreSQL
                     |
                     +-- profiles
@@ -158,9 +182,7 @@ Supabase Auth   PostgreSQL
                     +-- RLS policies
 ```
 
-The application uses Supabase authentication to establish the current user session.
-
-Server-side routes validate authenticated users before accessing application data. PostgreSQL Row Level Security provides an additional authorization layer at the database level.
+Supabase Authentication establishes the current user session. Server-side routes validate authenticated users before accessing application data, while PostgreSQL Row Level Security provides an additional authorization layer at the database level.
 
 ## Project Structure
 
@@ -187,7 +209,9 @@ lib/
     └── server.ts
 
 supabase/
-└── schema.sql
+├── schema.sql
+├── activity-upgrade.sql
+└── username-audit-upgrade.sql
 ```
 
 ## Environment Variables
@@ -223,7 +247,7 @@ npm install
 
 Create `.env.local` and configure the required Supabase environment variables.
 
-Run the database setup contained in:
+For a new Supabase project, run the complete database setup contained in:
 
 ```text
 supabase/schema.sql
@@ -263,29 +287,32 @@ https://client-dashboard-seven-bay.vercel.app
 
 ## Database
 
-The complete database configuration is documented in:
+The complete database configuration for a new installation is documented in:
 
 ```text
 supabase/schema.sql
 ```
 
-For an existing database that already has the earlier activity upgrade, run:
+The repository also contains upgrade scripts used during development:
 
 ```text
+supabase/activity-upgrade.sql
 supabase/username-audit-upgrade.sql
 ```
 
-It contains the database structures required by the application, including profile management, activity tracking, role support, database triggers, and Row Level Security policies.
+`schema.sql` contains the current database structures required by the application, including profile management, unique usernames, activity tracking, actor-aware auditing, role support, database triggers, and Row Level Security policies.
+
+For an existing installation created before the username/audit changes, `username-audit-upgrade.sql` documents the corresponding migration.
 
 ### Main Tables
 
-**profiles**
+**`profiles`**
 
 Stores application-specific user information such as full name, unique username, email, company, phone number, and application role. Full names may be shared by multiple users; usernames are unique application identities.
 
-**activity_logs**
+**`activity_logs`**
 
-Stores account activity associated with authenticated users. `user_id` identifies the account whose history is being viewed, while `actor_id` identifies the authenticated account that performed the action when applicable. This allows administrative changes to appear in both the administrator and affected user audit histories.
+Stores account activity associated with authenticated users. `user_id` identifies the account whose history is being viewed, while `actor_id` identifies the authenticated account that performed the action when applicable.
 
 ## Security
 
@@ -303,9 +330,9 @@ This prevents authorization from depending only on the frontend interface.
 
 The application is deployed using **Vercel** and connected directly to the GitHub repository.
 
-Production environment variables are configured through Vercel rather than committed to the repository.
+Production environment variables are configured through Vercel rather than committed to the repository. The production application communicates with Supabase through the configured environment variables and authorized authentication redirect URLs.
 
-The production application communicates with the same Supabase backend through the configured environment variables and authorized authentication redirect URLs.
+Pushes to the production branch can trigger a new Vercel deployment through the GitHub integration.
 
 ## Development Goals
 
@@ -318,6 +345,7 @@ This project was created to demonstrate practical experience with:
 - PostgreSQL database design
 - Database authorization and RLS
 - Role-based access control
+- Audit logging
 - Responsive application interfaces
 - Git/GitHub workflows
 - Production deployment
