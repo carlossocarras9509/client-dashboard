@@ -24,8 +24,11 @@ Authentication and database services are provided by Supabase, while the fronten
 ### Authentication
 
 - Email and password registration
+- Unique username assigned at registration (email prefix suggested, editable before signup)
 - Secure sign in and sign out
 - Password reset workflow
+- In-account password change
+- Authentication and security activity auditing
 - Strong-password validation
 - Protected application routes
 - Supabase SSR authentication
@@ -35,21 +38,23 @@ Authentication and database services are provided by Supabase, while the fronten
 
 - Account overview
 - Editable user profile
+- Unique editable username
 - Company and phone information
 - Account status
 - Role information
 - Recent activity history
+- Sign-in, sign-out, profile, password, registration and email-confirmation events
 - Responsive dashboard interface
 - Loading, empty, success, and error states
 
 ### Admin Dashboard
 
 - Administrative dashboard
-- User listing
+- User listing with names, usernames and email identities
 - Search users
 - Filter users by role
 - User detail pages
-- Update user roles
+- Update user roles with actor-aware audit history
 - Client/Admin role model
 - Protected administrative functionality
 
@@ -66,7 +71,7 @@ Authentication and database services are provided by Supabase, while the fronten
 ### Database & Security
 
 - PostgreSQL database through Supabase
-- `profiles` table
+- `profiles` table with unique usernames
 - `activity_logs` table
 - Authentication/profile relationship
 - Automatic profile creation for new users
@@ -74,6 +79,44 @@ Authentication and database services are provided by Supabase, while the fronten
 - Row Level Security (RLS)
 - Client-specific access policies
 - Administrator access policies
+
+## Demo Accounts
+
+For the final evaluation, two preconfigured demonstration accounts can be provided: one **Administrator** and one **Client**. These accounts are intended for immediate role-based testing and should contain demonstration data only.
+
+The demo credentials can be shared with the evaluator separately or added here immediately before delivery. Avoid reusing any personal password.
+
+### Testing the Complete Email Authentication Flow
+
+The preconfigured demo accounts are best for quickly reviewing the Admin and Client experiences. To test email-dependent authentication features, the evaluator should register a new account using an email address they can access.
+
+New registrations are automatically assigned the `client` role. The registration form suggests a username from the part of the email before `@`, but the evaluator can replace it with any available valid username. Usernames are unique even when two users have the same full name. Using a real accessible email allows the evaluator to test the complete lifecycle:
+
+- Account registration
+- Email confirmation
+- Sign in and sign out
+- Forgot-password email delivery
+- Password recovery
+- In-account password change
+- Protected routes
+- Activity history
+
+An administrator can later promote that newly registered account to `admin` from User Management, allowing the role-management workflow to be evaluated as well.
+
+## Activity Audit Trail
+
+The application records meaningful authenticated account events in `activity_logs`, including:
+
+- Account creation
+- Email confirmation
+- Successful sign in
+- Sign out
+- Profile updates
+- Password changes from Security settings
+- Completed password recovery
+- Administrator role changes, including the previous role, new role and administrator identity
+
+Password values, recovery tokens, session tokens and other secrets are never written to the activity log. A forgot-password **request** is intentionally not attached to a user audit record because the request is unauthenticated; avoiding an account lookup at that stage helps prevent account-enumeration behavior. The completed recovery is recorded once the recovery session is authenticated.
 
 ## Technology Stack
 
@@ -220,10 +263,16 @@ https://client-dashboard-seven-bay.vercel.app
 
 ## Database
 
-The database configuration is documented in:
+The complete database configuration is documented in:
 
 ```text
 supabase/schema.sql
+```
+
+For an existing database that already has the earlier activity upgrade, run:
+
+```text
+supabase/username-audit-upgrade.sql
 ```
 
 It contains the database structures required by the application, including profile management, activity tracking, role support, database triggers, and Row Level Security policies.
@@ -232,11 +281,11 @@ It contains the database structures required by the application, including profi
 
 **profiles**
 
-Stores application-specific user information such as name, email, company, phone number, and application role.
+Stores application-specific user information such as full name, unique username, email, company, phone number, and application role. Full names may be shared by multiple users; usernames are unique application identities.
 
 **activity_logs**
 
-Stores account activity associated with authenticated users.
+Stores account activity associated with authenticated users. `user_id` identifies the account whose history is being viewed, while `actor_id` identifies the authenticated account that performed the action when applicable. This allows administrative changes to appear in both the administrator and affected user audit histories.
 
 ## Security
 

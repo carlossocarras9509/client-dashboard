@@ -36,8 +36,15 @@ export default function LoginPage() {
         return;
       }
 
-      // La sesión ya fue creada correctamente por Supabase.
-      // Ahora hacemos una sola navegación hacia el dashboard.
+      await fetch("/api/activity", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "signed_in",
+          details: "Signed in successfully",
+        }),
+      });
+
       router.replace("/dashboard");
     } catch {
       setError("Something went wrong. Please try again.");

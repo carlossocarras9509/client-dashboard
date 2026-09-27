@@ -3,12 +3,13 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BuildingIcon, CheckIcon, PhoneIcon, UserIcon } from "@/components/Icons";
 
-export default function EditProfileForm({ fullName, company, phone }: { fullName: string; company: string; phone: string }) {
+export default function EditProfileForm({ fullName, username, company, phone }: { fullName: string; username: string; company: string; phone: string }) {
   const router = useRouter();
-  const [name,setName]=useState(fullName); const [companyName,setCompany]=useState(company); const [phoneNumber,setPhone]=useState(phone); const [loading,setLoading]=useState(false); const [message,setMessage]=useState<{type:"ok"|"error";text:string}|null>(null);
-  async function handleSubmit(event:FormEvent<HTMLFormElement>){event.preventDefault();setLoading(true);setMessage(null);const response=await fetch("/api/profile",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({full_name:name,company:companyName,phone:phoneNumber})});const body=await response.json();setLoading(false);if(!response.ok){setMessage({type:"error",text:body.error||"Unable to update profile."});return;}setMessage({type:"ok",text:"Profile updated successfully."});router.refresh();}
+  const [name,setName]=useState(fullName); const [userName,setUsername]=useState(username); const [companyName,setCompany]=useState(company); const [phoneNumber,setPhone]=useState(phone); const [loading,setLoading]=useState(false); const [message,setMessage]=useState<{type:"ok"|"error";text:string}|null>(null);
+  async function handleSubmit(event:FormEvent<HTMLFormElement>){event.preventDefault();setLoading(true);setMessage(null);const response=await fetch("/api/profile",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({full_name:name,username:userName,company:companyName,phone:phoneNumber})});const body=await response.json();setLoading(false);if(!response.ok){setMessage({type:"error",text:body.error||"Unable to update profile."});return;}setMessage({type:"ok",text:"Profile updated successfully."});router.refresh();}
   return <form onSubmit={handleSubmit} className="space-y-4">
     <Field icon={<UserIcon className="h-4 w-4"/>} label="Full name" value={name} setValue={setName} required/>
+    <Field icon={<UserIcon className="h-4 w-4"/>} label="Username" value={userName} setValue={(value)=>setUsername(value.toLowerCase().replace(/[^a-z0-9._-]/g,"").slice(0,30))} placeholder="username" required/>
     <Field icon={<BuildingIcon className="h-4 w-4"/>} label="Company" value={companyName} setValue={setCompany} placeholder="Company name"/>
     <Field icon={<PhoneIcon className="h-4 w-4"/>} label="Phone" value={phoneNumber} setValue={setPhone} placeholder="Phone number" type="tel"/>
     {message&&<div className={`flex items-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold ${message.type==="ok"?"border-emerald-100 bg-emerald-50 text-emerald-700":"border-red-100 bg-red-50 text-red-700"}`}>{message.type==="ok"&&<CheckIcon className="h-4 w-4"/>}{message.text}</div>}

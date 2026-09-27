@@ -5,7 +5,17 @@ import { LogOutIcon } from "@/components/Icons";
 
 export default function LogoutButton({ variant = "default" }: { variant?: "default" | "sidebar" | "compact" }) {
   const router = useRouter();
-  async function logout(){const supabase=createClient();await supabase.auth.signOut();router.replace("/login");router.refresh();}
+  async function logout(){
+    await fetch("/api/activity", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "signed_out", details: "Signed out of the workspace" }),
+    }).catch(() => undefined);
+    const supabase=createClient();
+    await supabase.auth.signOut();
+    router.replace("/login");
+    router.refresh();
+  }
   const cls = variant === "sidebar"
     ? "flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-400 transition hover:bg-slate-800 hover:text-white"
     : variant === "compact"

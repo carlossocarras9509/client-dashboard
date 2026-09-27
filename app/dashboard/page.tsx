@@ -2,11 +2,12 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import AppSidebar from "@/components/AppSidebar";
 import EditProfileForm from "./EditProfileForm";
+import ChangePasswordForm from "./ChangePasswordForm";
 import { ActivityIcon, BuildingIcon, CalendarIcon, MailIcon, ShieldIcon, UserIcon } from "@/components/Icons";
 
 export default async function DashboardPage(){
   const {supabase,user}=await requireUser();
-  const {data:profile}=await supabase.from("profiles").select("full_name,role,company,phone,created_at").eq("id",user.id).single();
+  const {data:profile}=await supabase.from("profiles").select("full_name,username,role,company,phone,created_at").eq("id",user.id).single();
   const {data:activityData}=await supabase.from("activity_logs").select("id,action,details,created_at").eq("user_id",user.id).order("created_at",{ascending:false}).limit(6);
   const activity=activityData??[];
   const fullName=profile?.full_name||user.user_metadata?.full_name||user.email||"User";
@@ -34,15 +35,20 @@ export default async function DashboardPage(){
             <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5"><div><h2 className="text-lg font-black tracking-tight text-slate-950">Profile overview</h2><p className="mt-1 text-sm text-slate-500">Your current account information.</p></div><span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">Active profile</span></div>
             <div className="grid gap-0 sm:grid-cols-2">
               <ProfileItem icon={<UserIcon className="h-5 w-5"/>} label="Full name" value={fullName}/>
+              <ProfileItem icon={<UserIcon className="h-5 w-5"/>} label="Username" value={profile?.username ? `@${profile.username}` : "Not provided"}/>
               <ProfileItem icon={<BuildingIcon className="h-5 w-5"/>} label="Company" value={profile?.company||"Not provided"}/>
               <ProfileItem icon={<MailIcon className="h-5 w-5"/>} label="Email" value={user.email||"Not provided"}/>
-              <ProfileItem icon={<CalendarIcon className="h-5 w-5"/>} label="Member since" value={memberSince}/>
             </div>
           </div>
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_16px_40px_-30px_rgba(15,23,42,0.45)]">
             <div className="mb-6"><h2 className="text-lg font-black tracking-tight text-slate-950">Edit profile</h2><p className="mt-1 text-sm text-slate-500">Keep your contact information up to date.</p></div>
-            <EditProfileForm fullName={profile?.full_name||""} company={profile?.company||""} phone={profile?.phone||""}/>
+            <EditProfileForm fullName={profile?.full_name||""} username={profile?.username||""} company={profile?.company||""} phone={profile?.phone||""}/>
           </div>
+        </section>
+
+        <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_16px_40px_-30px_rgba(15,23,42,0.45)]">
+          <div className="mb-6"><p className="text-xs font-bold uppercase tracking-[0.15em] text-blue-600">Security</p><h2 className="mt-2 text-lg font-black tracking-tight text-slate-950">Change password</h2><p className="mt-1 text-sm text-slate-500">Update your password while signed in. Password changes are recorded in your activity history.</p></div>
+          <div className="max-w-2xl"><ChangePasswordForm/></div>
         </section>
 
         <section className="mt-6 rounded-2xl border border-slate-200 bg-white shadow-[0_16px_40px_-30px_rgba(15,23,42,0.45)]">
